@@ -7,5 +7,7 @@ tools/
 !external/.keep
 config/vt_api_key.txt
 config/emba_updater
-config/trickest_cve-db.txt
+config/emba_updater_data
 config/module_blacklist.txt
+config/jtr_wordlist.txt
+config/gpt_config.env

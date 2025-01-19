@@ -2,8 +2,8 @@
 
 # EMBA - EMBEDDED LINUX ANALYZER
 #
-# Copyright 2020-2022 Siemens AG
-# Copyright 2020-2022 Siemens Energy AG
+# Copyright 2020-2023 Siemens AG
+# Copyright 2020-2025 Siemens Energy AG
 #
 # EMBA comes with ABSOLUTELY NO WARRANTY. This is free software, and you are
 # welcome to redistribute it under the terms of the GNU General Public License.
@@ -19,7 +19,8 @@
 I01_default_apps(){
   module_title "${FUNCNAME[0]}"
 
-  if [[ "$LIST_DEP" -eq 1 ]] || [[ $IN_DOCKER -eq 1 ]] || [[ $DOCKER_SETUP -eq 0 ]] || [[ $FULL -eq 1 ]] ; then
+  if [[ "${LIST_DEP}" -eq 1 ]] || [[ "${IN_DOCKER}" -eq 1 ]] || [[ "${DOCKER_SETUP}" -eq 0 ]] || [[ "${FULL}" -eq 1 ]] ; then
+    print_tool_info "file" 1
     print_tool_info "jq" 1
     print_tool_info "make" 1
     print_tool_info "tree" 1
@@ -42,21 +43,38 @@ I01_default_apps(){
     print_tool_info "git" 1
     print_tool_info "strace" 1
 
+    print_tool_info "rpm" 1
+
     # python3.10-request
     print_tool_info "python3-pip" 1
     print_pip_info "requests"
 
+    # Ubuntu not installing ping - see https://github.com/e-m-b-a/embark/issues/151
+    print_tool_info "iputils-ping" 1
+
+    # diffing firmware
+    print_tool_info "colordiff" 1
+    print_tool_info "ssdeep" 1
+    print_tool_info "xdot" 1
+
+    # exif parser and readpe for windows binary analysis
+    print_tool_info "libimage-exiftool-perl" 1
+    print_tool_info "readpe" 1
+
+    # tidy is currently used to prettify the semgrep xml output
+    print_tool_info "tidy" 1
+
     # tools only available on Kali Linux:
-    if [[ "$OTHER_OS" -eq 0 ]] && [[ "$UBUNTU_OS" -eq 0 ]]; then
+    if [[ "${OTHER_OS}" -eq 0 ]] && [[ "${UBUNTU_OS}" -eq 0 ]]; then
       print_tool_info "metasploit-framework" 1
     else
-      echo -e "$RED""$BOLD""Not installing metasploit-framework. Your EMBA installation will be incomplete""$NC"
+      echo -e "${RED}""${BOLD}""Not installing metasploit-framework. Your EMBA installation will be incomplete""${NC}"
     fi
-  
-    if [[ "$LIST_DEP" -eq 1 ]] || [[ $DOCKER_SETUP -eq 1 ]] ; then
+
+    if [[ "${LIST_DEP}" -eq 1 ]] || [[ "${DOCKER_SETUP}" -eq 1 ]] ; then
       ANSWER=("n")
     else
-      echo -e "\\n""$MAGENTA""$BOLD""These applications will be installed/updated!""$NC"
+      echo -e "\\n""${MAGENTA}""${BOLD}""These applications will be installed/updated!""${NC}"
       ANSWER=("y")
     fi
 
@@ -76,10 +94,23 @@ I01_default_apps(){
         fi
         mkdir -p /home/linuxbrew/.linuxbrew
         chown -R linuxbrew: /home/linuxbrew/.linuxbrew
-        #sudo -u linuxbrew CI=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+        # sudo -u linuxbrew CI=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+        # nosemgrep
         sudo -u linuxbrew CI=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-        pip3 install -U requests 2>/dev/null || true
+        # Install Rust (used from cwe_checker and binwalk)
+        rm "${HOME}"/.cargo -r -f
+        rm "${HOME}"/.config -r -f
+        rm external/rustup -r -f
+
+        curl https://sh.rustup.rs -sSf | sh -s -- -y
+        # shellcheck disable=SC1091
+        . "${HOME}"/.cargo/env
+
+        export PATH="${PATH}":"${HOME}"/.cargo/bin
+
+
+        pip_install "requests" "-U"
       ;;
     esac
   fi
